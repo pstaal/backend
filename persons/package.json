@@ -10,12 +10,15 @@
     "build:ui": "rm -rf dist && cd ../../submission-repository/part2/phonebook && npm run build && cp -r dist ../../../backend/persons",
     "deploy": "fly deploy",
     "deploy:full": "npm run build:ui && npm run deploy",
-    "logs:prod": "fly logs"
+    "logs:prod": "fly logs",
+    "lint": "eslint ."
   },
   "author": "",
   "license": "ISC",
   "devDependencies": {
     "@flydotio/dockerfile": "^0.5.2",
+    "@stylistic/eslint-plugin-js": "^1.6.3",
+    "eslint": "^8.57.0",
     "nodemon": "^3.1.0"
   },
   "dependencies": {
