@@ -86,6 +86,33 @@ test("when url propery is omitted we get 400 status", async () => {
   await api.post("/api/blogs").send(withoutUrlBlog).expect(400);
 });
 
+test("a blog can be deleted", async () => {
+  const blogsAtStart = await helper.blogsInDb();
+  const blogToDelete = blogsAtStart[0];
+
+  await api.delete(`/api/blogs/${blogToDelete.id}`).expect(204);
+
+  const blogsAtEnd = await helper.blogsInDb();
+
+  const contents = blogsAtEnd.map((r) => r.id);
+  assert(!contents.includes(blogToDelete.id));
+
+  assert.strictEqual(blogsAtEnd.length, helper.initialBlogs.length - 1);
+});
+
+test("the number of likes of a blog can be updated", async () => {
+  const blogsAtStart = await helper.blogsInDb();
+  const blogToUpdate = blogsAtStart[0];
+  let id = blogToUpdate.id;
+
+  await api.put(`/api/blogs/${id}`).send({ likes: 100 }).expect(200);
+
+  const blogsAtEnd = await helper.blogsInDb();
+  const changedBlog = blogsAtEnd.find((blog) => blog.id === id);
+
+  assert.strictEqual(changedBlog.likes, 100);
+});
+
 after(async () => {
   await mongoose.connection.close();
 });
