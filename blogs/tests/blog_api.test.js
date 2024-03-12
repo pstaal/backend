@@ -4,10 +4,12 @@ const mongoose = require("mongoose");
 const helper = require("./test_helper");
 const supertest = require("supertest");
 const app = require("../app");
+const bcrypt = require("bcrypt");
 
 const api = supertest(app);
 
 const Blog = require("../models/blog");
+const User = require("../models/user");
 
 beforeEach(async () => {
   await Blog.deleteMany({});
@@ -15,6 +17,13 @@ beforeEach(async () => {
   const blogObjects = helper.initialBlogs.map((blog) => new Blog(blog));
   const promiseArray = blogObjects.map((blog) => blog.save());
   await Promise.all(promiseArray);
+
+  await User.deleteMany({});
+
+  const passwordHash = await bcrypt.hash("sekret", 10);
+  const user = new User({ username: "root", name: "root", passwordHash });
+
+  await user.save();
 });
 
 test("blogs are returned as json", async () => {
@@ -111,6 +120,52 @@ test("the number of likes of a blog can be updated", async () => {
   const changedBlog = blogsAtEnd.find((blog) => blog.id === id);
 
   assert.strictEqual(changedBlog.likes, 100);
+});
+
+test("we can successfully retrieve users", async () => {
+  const response = await api.get("/api/users").expect(200);
+
+  assert.strictEqual(response.body[0].name, "root");
+});
+
+test("we cannot create a user when the password is too short", async () => {
+  const user = {
+    username: "tester",
+    name: "tester",
+    password: "ee",
+  };
+
+  await api.post("/api/users").send(user).expect(400);
+});
+
+test("we cannot create a user when the username already exists", async () => {
+  const user = {
+    username: "root",
+    name: "tester",
+    password: "testers",
+  };
+
+  await api.post("/api/users").send(user).expect(400);
+});
+
+test("we cannot create a user when the username is omitted", async () => {
+  const user = {
+    name: "tester",
+    password: "testers",
+  };
+
+  await api.post("/api/users").send(user).expect(400);
+});
+
+test("we can create a user", async () => {
+  const user = {
+    name: "tester",
+    username: "tester",
+    password: "testers",
+  };
+
+  const response = await api.post("/api/users").send(user);
+  assert.strictEqual(response.body.name, "tester");
 });
 
 after(async () => {
